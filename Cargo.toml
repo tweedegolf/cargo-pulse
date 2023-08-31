@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.27"
 crates_io_api = "0.8.1"
-#octocrab = "0.29.3"
+octocrab = "0.29.3"
+tokio = "1.32.0"
