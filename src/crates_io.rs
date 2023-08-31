@@ -12,42 +12,51 @@ pub struct CrateVitality {
     pub authors: Option<u32>,
 }
 
-pub fn get_crate_info(crate_name: &str) -> CrateVitality {
-    let crates_io = SyncClient::new(
+pub fn spawn() -> SyncClient {
+    SyncClient::new(
         "cargo pulse (info@tweedegolf.com)",
         std::time::Duration::from_millis(1000),
     )
-    .unwrap();
+    .unwrap()
+}
 
-    let pkg = crates_io.get_crate(crate_name).unwrap();
+pub trait GetVitalSigns {
+    fn get_vital_signs(&mut self, crate_name: &str) -> Result<CrateVitality, crates_io_api::Error>;
+}
 
-    let now = chrono::offset::Utc::now();
+impl GetVitalSigns for SyncClient {
+    fn get_vital_signs(&mut self, crate_name: &str) -> Result<CrateVitality, crates_io_api::Error> {
+        let pkg = self.get_crate(crate_name)?;
 
-    let full_age = now - pkg.crate_data.created_at;
-    let staleness = now - pkg.crate_data.updated_at;
-    let recent_downloads = pkg.crate_data.recent_downloads.unwrap_or_default();
+        let now = chrono::offset::Utc::now();
 
-    let update_frequency = Duration::days(90).num_milliseconds() as f64 * pkg.versions.len() as f64
-        / full_age.num_milliseconds() as f64;
+        let full_age = now - pkg.crate_data.created_at;
+        let staleness = now - pkg.crate_data.updated_at;
+        let recent_downloads = pkg.crate_data.recent_downloads.unwrap_or_default();
 
-    let gh = pkg
-        .crate_data
-        .repository
-        .as_deref()
-        .and_then(crate::github::fetch_github_data);
+        let update_frequency = Duration::days(90).num_milliseconds() as f64
+            * pkg.versions.len() as f64
+            / full_age.num_milliseconds() as f64;
 
-    let stargazers = gh.as_ref().map(|info| info.stargazers);
-    let authors = gh.as_ref().map(|info| info.authors);
+        let gh = pkg
+            .crate_data
+            .repository
+            .as_deref()
+            .and_then(crate::github::fetch_github_data);
 
-    let reverse_dependencies = crates_io.crate_reverse_dependency_count(crate_name).ok();
+        let stargazers = gh.as_ref().map(|info| info.stargazers);
+        let authors = gh.as_ref().map(|info| info.authors);
 
-    CrateVitality {
-        full_age,
-        staleness,
-        update_frequency,
-        recent_downloads,
-        reverse_dependencies,
-        stargazers,
-        authors,
+        let reverse_dependencies = self.crate_reverse_dependency_count(crate_name).ok();
+
+        Ok(CrateVitality {
+            full_age,
+            staleness,
+            update_frequency,
+            recent_downloads,
+            reverse_dependencies,
+            stargazers,
+            authors,
+        })
     }
 }
