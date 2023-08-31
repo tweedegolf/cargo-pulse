@@ -1,38 +1,31 @@
-use crates_io_api::{SyncClient, Error, CrateResponse};
-use chrono;
+use chrono::{self, Duration};
+use crates_io_api::{CrateResponse, Error, SyncClient};
 
-trait Vitality {
-    fn seniority(&self) -> chrono::Duration;
-    fn staleness(&self) -> chrono::Duration;
-    fn average_age(&self) -> chrono::Duration;
+fn seniority(pkg: &CrateResponse) -> Duration {
+    chrono::offset::Utc::now() - pkg.crate_data.created_at
 }
 
+fn staleness(pkg: &CrateResponse) -> Duration {
+    let now = chrono::offset::Utc::now();
+    chrono::offset::Utc::now() - pkg.crate_data.updated_at
+}
 
-impl Vitality for CrateResponse {
-    fn seniority(&self) -> chrono::Duration {
-        chrono::offset::Utc::now() - self.crate_data.created_at
-    }
-
-    fn staleness(&self) -> chrono::Duration {
-        let now = chrono::offset::Utc::now();
-        chrono::offset::Utc::now() - self.crate_data.updated_at
-    }
-
-    fn average_age(&self) -> chrono::Duration {
-        self.seniority() / self.versions.len() as i32
-    }
+fn frequency(pkg: &CrateResponse, period: Duration) -> f64 {
+    let average_age = seniority(pkg) / pkg.versions.len() as i32;
+    period.num_milliseconds() as f64 / average_age.num_milliseconds() as f64
 }
 
 fn main() {
     let crates_io = SyncClient::new(
-         "cargo pulse (info@tweedegolf.com)",
-         std::time::Duration::from_millis(1000),
-    ).unwrap();
+        "cargo pulse (info@tweedegolf.com)",
+        std::time::Duration::from_millis(1000),
+    )
+    .unwrap();
 
     let pkg = crates_io.get_crate("serde").unwrap();
 
-    println!("{:?}", pkg.seniority());
-    println!("{:?}", pkg.staleness());
-    println!("{:?}", pkg.average_age());
+    println!("{:?}", seniority(&pkg));
+    println!("{:?}", staleness(&pkg));
+    println!("{:?}", frequency(&pkg, Duration::days(100)));
     println!("{:?}", pkg.crate_data.repository);
 }
