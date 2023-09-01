@@ -41,6 +41,11 @@ async fn display_vital_signs<'a>(crates: impl IntoIterator<Item = &'a str>) {
 #[tokio::main]
 async fn main() {
     //TODO: use gumdrop for a fuller command line parser, see cargo-minify
+    let mut args = std::env::args().peekable();
+    if args.peek().map(|s| s == "cargo").unwrap_or(false) {
+        args.next();
+    }
+
     if let Some(name) = std::env::args().nth(1) {
         display_vital_signs([name.as_str()]).await;
     } else {

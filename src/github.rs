@@ -26,7 +26,7 @@ pub async fn fetch_github_data(url: &str) -> Result<GhStats, octocrab::Error> {
             .get(format!("/repos/{owner}/{repo}/contributors"), None::<&()>)
             .await?;
 
-        gh.all_pages(page).await.unwrap()
+        gh.all_pages(page).await?
     };
 
     Ok(GhStats {

@@ -49,7 +49,7 @@ impl GetVitalSigns for AsyncClient {
             / full_age.num_milliseconds() as f64;
 
         let gh = if let Some(uri) = pkg.crate_data.repository {
-            Some(crate::github::fetch_github_data(&uri).await.unwrap())
+            crate::github::fetch_github_data(&uri).await.ok()
         } else {
             None
         };
