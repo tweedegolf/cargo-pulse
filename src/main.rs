@@ -40,13 +40,16 @@ async fn display_vital_signs<'a>(crates: impl IntoIterator<Item = &'a str>) {
 
 #[tokio::main]
 async fn main() {
-    //TODO: use gumdrop for a fuller command line parser, see cargo-minify
+    // Drop the first actual argument if it is equal to our subcommand
+    // (i.e. we are being called via 'cargo')
     let mut args = std::env::args().peekable();
-    if args.peek().map(|s| s == "cargo").unwrap_or(false) {
+    args.next();
+
+    if args.peek().map(|s| s.as_str()) == Some("pulse") {
         args.next();
     }
 
-    if let Some(name) = std::env::args().nth(1) {
+    if let Some(name) = args.next() {
         display_vital_signs([name.as_str()]).await;
     } else {
         let metadata = MetadataCommand::new().no_deps().exec().unwrap();
