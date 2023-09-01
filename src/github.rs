@@ -8,7 +8,12 @@ pub struct GhStats {
 pub async fn fetch_github_data(url: &str) -> Result<GhStats, octocrab::Error> {
     let (owner, repo);
     {
-        let mut iter = url.split('/').rev().take(2);
+        let mut iter = url
+            .strip_suffix(".git")
+            .unwrap_or(url)
+            .split('/')
+            .rev()
+            .take(2);
         repo = iter.next().unwrap();
         owner = iter.next().unwrap();
     }
