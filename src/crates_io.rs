@@ -1,5 +1,5 @@
 use chrono::{self, Duration};
-use crates_io_api::SyncClient;
+use crates_io_api::AsyncClient;
 
 #[derive(Debug)]
 pub struct CrateVitality {
@@ -12,21 +12,31 @@ pub struct CrateVitality {
     pub authors: Option<u32>,
 }
 
-pub fn spawn() -> SyncClient {
-    SyncClient::new(
+pub fn spawn() -> AsyncClient {
+    AsyncClient::new(
         "cargo pulse (info@tweedegolf.com)",
         std::time::Duration::from_millis(1000),
     )
     .unwrap()
 }
 
+use async_trait::async_trait;
+
+#[async_trait]
 pub trait GetVitalSigns {
-    fn get_vital_signs(&mut self, crate_name: &str) -> Result<CrateVitality, crates_io_api::Error>;
+    async fn get_vital_signs(
+        &mut self,
+        crate_name: &str,
+    ) -> Result<CrateVitality, crates_io_api::Error>;
 }
 
-impl GetVitalSigns for SyncClient {
-    fn get_vital_signs(&mut self, crate_name: &str) -> Result<CrateVitality, crates_io_api::Error> {
-        let pkg = self.get_crate(crate_name)?;
+#[async_trait]
+impl GetVitalSigns for AsyncClient {
+    async fn get_vital_signs(
+        &mut self,
+        crate_name: &str,
+    ) -> Result<CrateVitality, crates_io_api::Error> {
+        let pkg = self.get_crate(crate_name).await?;
 
         let now = chrono::offset::Utc::now();
 
@@ -38,16 +48,16 @@ impl GetVitalSigns for SyncClient {
             * pkg.versions.len() as f64
             / full_age.num_milliseconds() as f64;
 
-        let gh = pkg
-            .crate_data
-            .repository
-            .as_deref()
-            .and_then(crate::github::fetch_github_data);
+        let gh = if let Some(uri) = pkg.crate_data.repository {
+            Some(crate::github::fetch_github_data(&uri).await.unwrap())
+        } else {
+            None
+        };
 
         let stargazers = gh.as_ref().map(|info| info.stargazers);
         let authors = gh.as_ref().map(|info| info.authors);
 
-        let reverse_dependencies = self.crate_reverse_dependency_count(crate_name).ok();
+        let reverse_dependencies = None; // self.crate_reverse_dependency_count(crate_name).await.ok();
 
         Ok(CrateVitality {
             full_age,
