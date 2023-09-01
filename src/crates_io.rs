@@ -57,7 +57,7 @@ impl GetVitalSigns for AsyncClient {
         let stargazers = gh.as_ref().map(|info| info.stargazers);
         let authors = gh.as_ref().map(|info| info.authors);
 
-        let reverse_dependencies = None; // self.crate_reverse_dependency_count(crate_name).await.ok();
+        let reverse_dependencies = self.crate_reverse_dependency_count(crate_name).await.ok();
 
         Ok(CrateVitality {
             full_age,
