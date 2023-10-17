@@ -13,7 +13,15 @@ async fn display_vital_signs<'a>(crates: impl IntoIterator<Item = &'a str>) {
     );
     for name in crates {
         //TODO: use color in selected areas to give subjective indications
-        let health = client.get_vital_signs(name).await.unwrap();
+        let Ok(health) = client.get_vital_signs(name).await else {
+            let name = name.to_string().green();
+            let na = "n/a";
+            println!(
+                "{:<24} {:<12} {:<14} {:<6} {:<10} {:<10} {:<7} {:<6}",
+                name, na, na, na, na, na, na, na
+            );
+            continue;
+        };
         let name = name.to_string().green();
         let age = format!("{} days", health.full_age.num_days()).yellow();
         let stale = format!("{} days ago", health.staleness.num_days()).bright_yellow();
