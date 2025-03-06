@@ -20,9 +20,6 @@ pub fn spawn() -> AsyncClient {
     .unwrap()
 }
 
-use async_trait::async_trait;
-
-#[async_trait]
 pub trait GetVitalSigns {
     async fn get_vital_signs(
         &mut self,
@@ -30,7 +27,6 @@ pub trait GetVitalSigns {
     ) -> Result<CrateVitality, crates_io_api::Error>;
 }
 
-#[async_trait]
 impl GetVitalSigns for AsyncClient {
     async fn get_vital_signs(
         &mut self,
